@@ -1,0 +1,116 @@
+#include <LiquidCrystal.h>
+
+// Comment section:
+
+// This Arduino code implements a P (Proportional) control system that uses a setpoint, a process variable (PV), and a control output (CO) to regulate an actuator (e.g., a motor or a heater).
+// The code also utilizes an LCD display and buttons to interact with the control system and display relevant information.
+
+int sensor = A0;
+int incButton = 2;
+int decButton = 3;
+int actuator = 6;
+int PV = 0;
+int setPoint = 0;
+int CO = 0;
+int Error = 0; // Variable to store the error (SP - PV)
+int button1 = 4; // Button to cycle through display options
+int button2 = 5; // Button to cycle through display options
+int displayIndex = 0; // Index to track the current display option on the LCD
+float pGain = 2.0; // P Gain Variable
+
+LiquidCrystal lcd(12, 11, 10, 9, 8, 7); // Initialize the LCD display with the corresponding pins
+
+void setup() {
+pinMode(actuator, OUTPUT);
+pinMode(incButton, INPUT_PULLUP);
+pinMode(decButton, INPUT_PULLUP);
+pinMode(button1, INPUT_PULLUP);
+pinMode(button2, INPUT_PULLUP);
+Serial.begin(9600);
+lcd.begin(16, 2);
+}
+
+void loop() {
+PV = analogRead(sensor); // Read the value from the sensor (0-1024)
+Error = setPoint - PV; // Calculate the error (SP - PV)
+CO = pGain * Error; // Multiply the error by the P Gain to obtain the control output
+
+if (CO > 255) {
+CO = 255; // Cap the control output at the maximum value of 255
+}
+if (CO < 0) {
+CO = 0; // Cap the control output at the minimum value of 0
+}
+analogWrite(actuator, CO); // Apply the control output (CO) to the actuator
+
+if (digitalRead(incButton) == LOW) {
+if (displayIndex == 0) setPoint += 10; // Increase the setpoint by 10 if in setpoint display mode
+else if (displayIndex == 1) CO = 255; // Set the control output to the maximum value if in control output display mode
+else if (displayIndex == 2) PV += 10; // Increase the process variable by 10 if in PV display mode
+else if (displayIndex == 3) Error += 10; // Increase the error by 10 if in error display mode
+else if (displayIndex == 4) pGain += 1.0; // Increase the P Gain by 1.0 if in P Gain display mode
+delay(200); // Debounce the button
+} else if (digitalRead(decButton) == LOW) {
+if (displayIndex == 0) setPoint -= 10; // Decrease the setpoint by 10 if in setpoint display mode
+else if (displayIndex == 1) CO = 0; // Set the control output to 0 if in control output display mode
+else if (displayIndex == 2) PV -= 10; // Decrease the process variable by 10 if in PV display mode
+else if (displayIndex == 3) Error -= 10; // Decrease the error by 10 if in error display mode
+else if (displayIndex == 4) pGain -= 1.0; // decrease the P Gain by 1.0 if in P Gain display mode
+    delay(200);
+  }
+  
+  if (digitalRead(button1) == LOW) {// Check if the increase button is pressed
+    displayIndex++;
+    if (displayIndex > 4) displayIndex = 0;
+    delay(200);// Debounce the button
+  }
+  
+  if (digitalRead(button2) == LOW) { // Check if the decrease button is pressed
+    displayIndex--;
+    if (displayIndex < 0) displayIndex = 4;
+    delay(200);// Debounce the button
+  }
+  
+  switch (displayIndex) {
+    case 0:
+      lcd.clear(); // Clear the LCD display
+      lcd.setCursor(0, 0);
+      lcd.print("SP= ");
+      lcd.print(setPoint);
+      break;
+    case 1:
+      lcd.clear(); // Clear the LCD display
+      lcd.setCursor(0, 0);
+      lcd.print("CO= ");
+      lcd.print(CO);
+      break;
+    case 2:
+      lcd.clear(); // Clear the LCD display
+      lcd.setCursor(0, 0);
+      lcd.print("PV= ");
+      lcd.print(PV);
+      break;
+    case 3:
+      lcd.clear(); // Clear the LCD display
+      lcd.setCursor(0, 0);
+      lcd.print("Error= ");
+      lcd.print(Error);
+      break;
+    case 4:
+      lcd.clear(); // Clear the LCD display
+      lcd.setCursor(0, 0);
+      lcd.print("PGain= ");
+      lcd.print(pGain);
+      break;
+  }
+ // Serial communication for debugging
+Serial.print("SP = "); 
+Serial.print(setPoint);
+Serial.print("\t CO = ");
+Serial.print(CO);
+Serial.print("\t PV = ");
+Serial.print(PV);
+Serial.print("\t P Gain = ");
+Serial.print(pGain);
+Serial.println();
+}
