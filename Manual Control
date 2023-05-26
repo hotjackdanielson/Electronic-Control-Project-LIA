@@ -1,0 +1,64 @@
+#include <LiquidCrystal.h>
+
+// Comment section:
+
+// This Arduino code demonstrates a Manual control system using an LDR (Light Dependent Resistor) as the sensor, buttons to increase or decrease the input value, and an actuator controlled by a PWM signal.
+// The code also utilizes an LCD display to show the input value (setpoint), control output value, and the process variable (LDR value) in real-time.
+
+const int sensor = A0; // Setting the pin for the Sensor
+const int increaseButtonPin = 2; // Setting the pin for the button that increases the input value
+const int decreaseButtonPin = 3; // Setting the pin for the button that decreases the input value
+const int actuator = 6; // Select the pin for the LED
+
+int PV = 0; // The process variable which is also the LDR value
+int inputValue = 0; // Input value
+int CO = 0; // Control output value
+
+LiquidCrystal lcd(12, 11, 10, 9, 8, 7); // Initialize the LCD display with the corresponding pins
+
+void setup() {
+// put your setup code here, to run once:
+pinMode(actuator, OUTPUT); // Declare the actuator pin as an output
+pinMode(increaseButtonPin, INPUT_PULLUP); // Declare the increase button pin as input with a pullup resistor
+pinMode(decreaseButtonPin, INPUT_PULLUP); // Declare the decrease button pin as input with a pullup resistor
+Serial.begin(9600); // Setting up the speed of the serial communication
+lcd.begin(16, 2); // Initialize the LCD display with 16 columns and 2 rows
+}
+
+void loop() {
+// put your main code here, to run repeatedly:
+PV = analogRead(sensor); // Read the value from the sensor, the value will be between 0-1024
+
+if (digitalRead(increaseButtonPin) == LOW) { // Check if the increase button is pressed
+inputValue += 10; // Increase the input value by 10
+delay(200); // Debounce the button
+}
+
+if (digitalRead(decreaseButtonPin) == LOW) { // Check if the decrease button is pressed
+inputValue -= 10; // Decrease the input value by 10
+delay(200); // Debounce the button
+}
+
+inputValue = constrain(inputValue, 0, 1023); // Constrain the input value between 0 and 1023
+CO = map(inputValue, 0, 1023, 0, 255); // Map the output to the input
+analogWrite(actuator, CO); // Write the CO to the actuator
+
+// Serial communication for debugging
+Serial.print("input = ");
+Serial.print(inputValue);
+Serial.print("\t CO = ");
+Serial.print(CO);
+Serial.print("\t PV = ");
+Serial.print(PV);
+Serial.println();
+
+lcd.clear(); // Clear the LCD display
+lcd.setCursor(0, 0); // Set the cursor to the first column of the first row
+lcd.print("Input= "); // Print "Input: " on the LCD display
+lcd.print(inputValue); // Print the input value on the LCD display
+lcd.setCursor(0, 1); // Set the cursor to the first column of the second row
+lcd.print("CO= "); // Print "CO: " on the LCD display
+lcd.print(CO); // Print the control output value on the LCD display
+lcd.print(" PV= ");
+lcd.print(PV);
+}
